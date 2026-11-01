@@ -1,0 +1,50 @@
+{
+  "date": "2026-11-01",
+  "units": "mm",
+  "conversion": "CadQuery/OpenCascade, tolerance 0.05 mm, angular tolerance 0.1 rad",
+  "checks": [
+    {
+      "part": "front_bezel",
+      "step_solids": 1,
+      "step_valid": true,
+      "bounds_mm": [
+        65.8048,
+        97.2448,
+        20.0048
+      ],
+      "stl_watertight": true,
+      "stl_winding_consistent": true,
+      "stl_components": 1,
+      "stl_triangles": 5044
+    },
+    {
+      "part": "rear_cover",
+      "step_solids": 1,
+      "step_valid": true,
+      "bounds_mm": [
+        65.8051,
+        97.2451,
+        8.2033
+      ],
+      "stl_watertight": true,
+      "stl_winding_consistent": true,
+      "stl_components": 1,
+      "stl_triangles": 15220
+    },
+    {
+      "part": "desk_stand",
+      "step_solids": 1,
+      "step_valid": true,
+      "bounds_mm": [
+        95.003,
+        75.003,
+        55.963
+      ],
+      "stl_watertight": true,
+      "stl_winding_consistent": true,
+      "stl_components": 1,
+      "stl_triangles": 1492
+    }
+  ],
+  "scope": "File and mesh integrity only; not physical fit or assembly interference."
+}
