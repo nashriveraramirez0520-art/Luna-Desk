@@ -24,6 +24,8 @@
 #include <ArduinoJson.h>
 #include <math.h>
 
+#include "luna_character.h"
+
 #define GFX_BL 6  // default backlight pin, you may replace DF_GFX_BL to actual backlight pin
 
 #define LCD_QSPI_CS   12
@@ -107,6 +109,8 @@ lv_obj_t *navigationLabel = nullptr;
 bool focusVisible = false;
 lv_obj_t *clockLabel = nullptr;
 
+bool lunaWorking = false;
+
 const uint32_t FOCUS_DURATION = 25UL * 60UL * 1000UL;
 
 uint32_t focusRemaining = FOCUS_DURATION;
@@ -135,6 +139,7 @@ void processStats(const String &message)
   if (!isfinite(cpuValue) || !isfinite(ramValue)) return;
   if (cpuValue < 0 || cpuValue > 100) return;
   if (ramValue < 0 || ramValue > 100) return;
+  lunaWorking = cpuValue >= 30;
 
   char text[32];
 
@@ -479,6 +484,13 @@ void setup()
       270, 265, switchPage
     );
 
+    navigationLabel = createButton(
+      screen, "Focus timer",
+      270, 265, switchPage
+    );
+
+    LunaCharacter::create(screen);
+
     /* Option 2: Try an example. See all the examples
      *  - Online: https://docs.lvgl.io/master/examples.html
      *  - Source codes: https://github.com/lvgl/lvgl/tree/master/examples
@@ -516,8 +528,10 @@ void loop()
     );
     lv_bar_set_value(cpuBar, 0, LV_ANIM_OFF);
     lv_bar_set_value(ramBar, 0, LV_ANIM_OFF);
-    
+    lv_label_set_text(clockLabel, "--:--:--");
   }
+
+  LunaCharacter::update(pcConnected && lunaWorking);
 
   lv_timer_handler();
   delay(5);

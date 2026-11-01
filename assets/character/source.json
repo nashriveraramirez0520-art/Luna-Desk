@@ -1,0 +1,26 @@
+{
+  "source_sha256": "7b4536179ad04028d3dab9555413d40c6b4e31c752b61940f60ae98d7e17a821",
+  "size": [
+    160,
+    176
+  ],
+  "fps": 8,
+  "clips": [
+    {
+      "state": "idle",
+      "start_seconds": 0,
+      "duration_seconds": 1.1,
+      "frames": 9,
+      "rgb565_bytes": 506880,
+      "gif_bytes": 65258
+    },
+    {
+      "state": "working",
+      "start_seconds": 1.1,
+      "duration_seconds": 1.06,
+      "frames": 8,
+      "rgb565_bytes": 450560,
+      "gif_bytes": 89995
+    }
+  ]
+}
