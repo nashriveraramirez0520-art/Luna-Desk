@@ -1,13 +1,2 @@
-Item,Qty,Supplier,Cost/item,Total Cost,link,Required units,Units per purchase,Status,Notes
-Waveshare ESP32-S3-Touch-LCD-3.5B bare board SKU 31137,1,Waveshare,25.99,25.99,https://www.waveshare.com/esp32-s3-touch-lcd-3.5b.htm,1,1,Listed price / not purchased,USD; standard version without case or camera; confirm at checkout
-M2 x 10 mm metric button-head machine screws - 10-pack,1,WREKD,2.79,2.79,https://wrekd.com/products/copy-of-metric-m2-hex-socket-button-head-grade-12-9-steel-screws-10-pack-choose-length?variant=45118579179824,4,10,Listed price / not purchased,USD; buy one 10-pack; use four to mount board through rear cover and columns; verify thread engagement
-M2 x 6 mm metric button-head machine screws - 10-pack,1,WREKD,2.79,2.79,https://wrekd.com/products/copy-of-metric-m2-hex-socket-button-head-grade-12-9-steel-screws-10-pack-choose-length?variant=45118579048752,2,10,Listed price / not purchased,USD; buy one 10-pack; use two for rear-cover closure into inserts
-Ruthex RX-M2x4 M2 heat-set inserts - 70-pack,1,Amazon / ruthex,9.99,9.99,https://www.amazon.com/dp/B088QJG676,2,70,Indirect price estimate / checkout unverified,USD; full pack charged to budget; use two; 4 mm length and 3.6 mm outer diameter; price reference and limitations in docs/bom-notes.md
-USB-C data cable,1,Already owned,0.00,0.00,,1,1,User-confirmed owned,No additional purchase; user confirmed a data-capable cable
-Front bezel / shell printed part,1,ODU university printing,,,cad/stl/front_bezel.stl,1,1,Printing cost pending,PLA proposed; covered by shared material reserve below rather than separately priced
-Rear cover printed part,1,ODU university printing,,,cad/stl/rear_cover.stl,1,1,Printing cost pending,PLA proposed; covered by shared material reserve below rather than separately priced
-Desk stand printed part,1,ODU university printing,,,cad/stl/desk_stand.stl,1,1,Printing cost pending,PLA proposed; covered by shared material reserve below rather than separately priced
-Shared printing material reserve,1,University material charge or shared filament,5.00,5.00,https://www.odu.edu/mlab,1,1,Planning allowance - not a supplier quote,USD; provisional combined allowance for all three prints; may contribute to shared filament; not a whole-spool purchase price
-Waveshare Registered Post Air Mail shipping,1,Waveshare,11.20,11.20,https://www.waveshare.com/esp32-s3-touch-lcd-3.5b.htm,1,1,Prior quote 2026-10-26 / reconfirm,USD; board shipment only; not shipping for other suppliers
-Additional hardware shipping,1,WREKD / Amazon,,,,1,1,Checkout cost pending,Not assumed free; add actual charges before ordering
-Sales tax and other checkout charges,1,Checkout totals,,,,1,1,Checkout cost pending,Not assumed zero; no final delivered total is asserted
+Item,Qty,Supplier,Cost/item,Total Cost,link
+Estimated total shipping,1,,,$0.00,
