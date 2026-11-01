@@ -40,7 +40,9 @@ TCA9554 TCA(0x20);
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(LCD_QSPI_CS, LCD_QSPI_CLK, LCD_QSPI_D0, LCD_QSPI_D1, LCD_QSPI_D2, LCD_QSPI_D3);
 
-Arduino_GFX *gfx = new Arduino_AXS15231B(bus, -1 /* RST */, 0 /* rotation */, false, 320, 480);
+Arduino_GFX *gfx = new Arduino_AXS15231B(
+  bus, -1 /* RST */, 1 /* rotation */, false, 320, 480
+);
 
 
 
@@ -93,9 +95,25 @@ void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
   }
 }
 
+// Variables Globales //
 lv_obj_t *status = nullptr;
 lv_obj_t *cpu = nullptr;
 lv_obj_t *ram = nullptr;
+lv_obj_t *stateLabel = nullptr;
+lv_obj_t *cpuBar = nullptr;
+lv_obj_t *ramBar = nullptr;
+lv_obj_t *focusPanel = nullptr;
+lv_obj_t *navigationLabel = nullptr;
+bool focusVisible = false;
+lv_obj_t *clockLabel = nullptr;
+
+const uint32_t FOCUS_DURATION = 25UL * 60UL * 1000UL;
+
+uint32_t focusRemaining = FOCUS_DURATION;
+uint32_t focusLastTick = 0;
+bool focusRunning = false;
+
+lv_obj_t *focusLabel = nullptr;
 
 uint32_t lastStatsAt = 0;
 bool pcConnected = false;
@@ -127,6 +145,32 @@ void processStats(const String &message)
   lv_label_set_text(ram, text);
 
   lv_label_set_text(status, "PC connected");
+  if (cpuValue >= 30)
+  {
+     lv_label_set_text(stateLabel, "Luna: working");
+     lv_obj_set_style_text_color(
+       stateLabel, lv_color_hex(0xFFD166), 0
+      );
+  }
+  else
+  {
+    lv_label_set_text(stateLabel, "Luna: idle");
+    lv_obj_set_style_text_color(
+      stateLabel, lv_color_hex(0xD9B8FF), 0
+    );
+  }
+  lv_bar_set_value(cpuBar, (int)cpuValue, LV_ANIM_OFF);
+  lv_bar_set_value(ramBar, (int)ramValue, LV_ANIM_OFF);
+
+  const char *timestamp = doc["time"] | "";
+
+  if (strlen(timestamp) >= 19 && timestamp[10] == 'T')
+  {
+   char clockText[9];
+   snprintf(clockText, sizeof(clockText), "%.8s", timestamp + 11);
+   lv_label_set_text(clockLabel, clockText);
+  }
+
   lastStatsAt = millis();
   pcConnected = true;
 }
@@ -167,6 +211,134 @@ void readPcMessages()
   }
 }
 
+lv_obj_t *createStatsBar(lv_obj_t *parent, int y)
+{
+  lv_obj_t *bar = lv_bar_create(parent);
+  lv_obj_set_size(bar, 210, 10);
+  lv_obj_align(bar, LV_ALIGN_CENTER, 85, y);
+  lv_bar_set_range(bar, 0, 100);
+  lv_bar_set_value(bar, 0, LV_ANIM_OFF);
+
+  lv_obj_set_style_bg_color(
+    bar, lv_color_hex(0x342845), LV_PART_MAIN
+  );
+  lv_obj_set_style_bg_color(
+    bar, lv_color_hex(0xD9B8FF), LV_PART_INDICATOR
+  );
+
+  return bar;
+}
+
+void refreshFocusLabel()
+{
+  if (!focusLabel) return;
+
+  uint32_t seconds = (focusRemaining + 999) / 1000;
+  uint32_t minutes = seconds / 60;
+  seconds = seconds % 60;
+
+  char text[16];
+  snprintf(
+    text, sizeof(text), "%02lu:%02lu",
+    (unsigned long)minutes,
+    (unsigned long)seconds
+  );
+
+  lv_label_set_text(focusLabel, text);
+}
+
+void updateFocusTimer()
+{
+  if (!focusRunning) return;
+
+  uint32_t now = millis();
+  uint32_t elapsed = now - focusLastTick;
+  focusLastTick = now;
+
+  if (elapsed >= focusRemaining)
+  {
+    focusRemaining = 0;
+    focusRunning = false;
+  }
+  else
+  {
+    focusRemaining -= elapsed;
+  }
+
+  refreshFocusLabel();
+}
+
+void toggleFocusTimer(lv_event_t *event)
+{
+  updateFocusTimer();
+
+  if (focusRunning)
+  {
+    focusRunning = false;
+  }
+  else if (focusRemaining > 0)
+  {
+    focusLastTick = millis();
+    focusRunning = true;
+  }
+}
+
+void resetFocusTimer(lv_event_t *event)
+{
+  focusRunning = false;
+  focusRemaining = FOCUS_DURATION;
+  refreshFocusLabel();
+}
+
+lv_obj_t *createButton(
+  lv_obj_t *parent, const char *text,
+  int x, int y, lv_event_cb_t callback
+)
+{
+  lv_obj_t *button = lv_button_create(parent);
+  lv_obj_set_size(button, 115, 40);
+  lv_obj_set_pos(button, x, y);
+  lv_obj_set_style_bg_color(
+    button, lv_color_hex(0x342845), 0
+  );
+  lv_obj_add_event_cb(
+    button, callback, LV_EVENT_CLICKED, nullptr
+  );
+
+  lv_obj_t *label = lv_label_create(button);
+  lv_label_set_text(label, text);
+  lv_obj_center(label);
+
+  return label;
+}
+
+void switchPage(lv_event_t *event)
+{
+  focusVisible = !focusVisible;
+
+  lv_obj_t *statsObjects[] = {
+    status, cpu, ram, cpuBar, ramBar
+  };
+
+  for (lv_obj_t *object : statsObjects)
+  {
+    if (focusVisible)
+      lv_obj_add_flag(object, LV_OBJ_FLAG_HIDDEN);
+    else
+      lv_obj_remove_flag(object, LV_OBJ_FLAG_HIDDEN);
+  }
+
+  if (focusVisible)
+    lv_obj_remove_flag(focusPanel, LV_OBJ_FLAG_HIDDEN);
+  else
+    lv_obj_add_flag(focusPanel, LV_OBJ_FLAG_HIDDEN);
+
+  lv_label_set_text(
+    navigationLabel,
+    focusVisible ? "PC status" : "Focus timer"
+  );
+}
+
 void setup()
 {
 #ifdef DEV_DEVICE_INIT
@@ -181,7 +353,7 @@ void setup()
   delay(10);
   TCA.write1(1, 1);
   delay(200);
-  bsp_touch_init(&Wire, -1, 0, 320, 480);
+  bsp_touch_init(&Wire, -1, 1, 480, 320);
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
@@ -247,25 +419,65 @@ void setup()
     /* Option 1: Create a simple label
      * ---------------------
      */
-        lv_obj_t *screen = lv_screen_active();
+    lv_obj_t *screen = lv_screen_active();
     lv_obj_set_style_bg_color(screen, lv_color_hex(0x171322), 0);
     lv_obj_set_style_text_color(screen, lv_color_hex(0xD9B8FF), 0);
 
     lv_obj_t *title = lv_label_create(screen);
     lv_label_set_text(title, "LUNA DESK");
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 25);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 85, 20);
+
+    clockLabel = lv_label_create(screen);
+    lv_label_set_text(clockLabel, "--:--:--");
+    lv_obj_align(clockLabel, LV_ALIGN_TOP_MID, 85, 50);
 
     status = lv_label_create(screen);
     lv_label_set_text(status, "Waiting for PC");
-    lv_obj_align(status, LV_ALIGN_CENTER, 0, -50);
+    lv_obj_align(status, LV_ALIGN_CENTER, 85, -70);
 
     cpu = lv_label_create(screen);
     lv_label_set_text(cpu, "CPU: -- %");
-    lv_obj_align(cpu, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(cpu, LV_ALIGN_CENTER, 85, -25);
 
     ram = lv_label_create(screen);
     lv_label_set_text(ram, "RAM: -- %");
-    lv_obj_align(ram, LV_ALIGN_CENTER, 0, 40);
+    lv_obj_align(ram, LV_ALIGN_CENTER, 85, 20);
+
+    stateLabel = lv_label_create(screen);
+    lv_label_set_text(stateLabel, "Luna: waiting");
+    lv_obj_align(stateLabel, LV_ALIGN_CENTER, 85, 65);
+    cpuBar = createStatsBar(screen, -5);
+    ramBar = createStatsBar(screen, 40);
+    focusPanel = lv_obj_create(screen);
+    lv_obj_remove_style_all(focusPanel);
+    lv_obj_set_pos(focusPanel, 200, 65);
+    lv_obj_set_size(focusPanel, 270, 145);
+    lv_obj_remove_flag(focusPanel, LV_OBJ_FLAG_SCROLLABLE);
+
+    focusLabel = lv_label_create(focusPanel);
+    lv_label_set_text(focusLabel, "25:00");
+    lv_obj_set_style_text_color(
+      focusLabel, lv_color_hex(0xFFD166), 0
+    );
+    lv_obj_set_style_transform_scale(focusLabel, 512, 0);
+    lv_obj_align(focusLabel, LV_ALIGN_TOP_MID, 0, 20);
+
+    createButton(
+      focusPanel, "Start/Pause",
+      10, 95, toggleFocusTimer
+    );
+
+    createButton(
+      focusPanel, "Reset",
+      145, 95, resetFocusTimer
+    );
+
+    lv_obj_add_flag(focusPanel, LV_OBJ_FLAG_HIDDEN);
+
+    navigationLabel = createButton(
+      screen, "Focus timer",
+      270, 265, switchPage
+    );
 
     /* Option 2: Try an example. See all the examples
      *  - Online: https://docs.lvgl.io/master/examples.html
@@ -290,6 +502,7 @@ void setup()
 void loop()
 {
   readPcMessages();
+  updateFocusTimer();
 
   if (pcConnected && millis() - lastStatsAt >= 5000)
   {
@@ -297,6 +510,13 @@ void loop()
     lv_label_set_text(status, "Disconnected");
     lv_label_set_text(cpu, "CPU: -- %");
     lv_label_set_text(ram, "RAM: -- %");
+    lv_label_set_text(stateLabel, "Luna: disconnected");
+    lv_obj_set_style_text_color(
+      stateLabel, lv_color_hex(0xB9A9CD), 0
+    );
+    lv_bar_set_value(cpuBar, 0, LV_ANIM_OFF);
+    lv_bar_set_value(ramBar, 0, LV_ANIM_OFF);
+    
   }
 
   lv_timer_handler();
