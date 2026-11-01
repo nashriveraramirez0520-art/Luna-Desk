@@ -1,6 +1,7 @@
 import tkinter as tk
 import psutil
 from main import choose_state
+from datetime import datetime
 
 def main():
     window = tk.Tk()
@@ -52,6 +53,13 @@ def main():
         fg="#D9B8FF", bg="#241C35"
     )
 
+    clock_label = tk.Label(
+        stats_panel, text="--:--:--",
+        font=("Segoe UI", 16),
+        fg="#B9A9CD", bg="#171322"
+    )
+    clock_label.pack(pady=15)
+
     state_label.pack(pady=5)
     ram_label.pack(pady=10)
     def update_stats():
@@ -63,6 +71,8 @@ def main():
 
         state = choose_state({"cpu_percent": cpu})
         state_label.configure(text=f"State: {state}")
+        current_time = datetime.now().strftime("%H:%M:%S")
+        clock_label.configure(text=current_time)
 
         window.after(1000, update_stats)
     psutil.cpu_percent(interval=None)
