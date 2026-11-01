@@ -1,8 +1,12 @@
+import argparse
+import math
 import time
 import tkinter as tk
 from datetime import datetime
+from pathlib import Path
 
 import psutil
+from PIL import Image, ImageTk
 
 from main import choose_state
 
@@ -14,15 +18,48 @@ WHITE = "#FFFFFF"
 MUTED = "#B9A9CD"
 GOLD = "#FFD166"
 
+FOCUS_SECONDS = 25 * 60
+
+
+def load_animation(window, path):
+    frames = []
+    durations = []
+
+    with Image.open(path) as gif:
+        for index in range(gif.n_frames):
+            gif.seek(index)
+
+            # Pillow reconstruye los cambios sobre el fotograma anterior.
+            frame = gif.convert("RGBA").copy()
+
+            frames.append(
+                ImageTk.PhotoImage(frame, master=window)
+            )
+            durations.append(
+                max(20, int(gif.info.get("duration", 125)))
+            )
+
+    return frames, durations
+
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Luna Desk desktop preview"
+    )
+    parser.add_argument(
+        "--state",
+        choices=("auto", "idle", "working"),
+        default="auto",
+        help="Use live CPU state or force an animation for testing.",
+    )
+    args = parser.parse_args()
+
     window = tk.Tk()
     window.title("Luna Desk — Preview")
     window.geometry("480x320")
     window.resizable(False, False)
     window.configure(bg=BACKGROUND)
 
-    # La navegación se coloca primero para reservar espacio abajo.
     navigation = tk.Frame(window, bg=PANEL, height=40)
     navigation.pack(side="bottom", fill="x")
     navigation.pack_propagate(False)
@@ -32,21 +69,47 @@ def main():
     character_panel.pack_propagate(False)
 
     tk.Label(
-        character_panel, text="LUNA",
+        character_panel,
+        text="LUNA",
         font=("Segoe UI", 20, "bold"),
-        fg=PURPLE, bg=PANEL,
+        fg=PURPLE,
+        bg=PANEL,
     ).pack(pady=(20, 10))
 
-    tk.Label(
-        character_panel, text="Character\npreview",
-        font=("Segoe UI", 14),
-        fg=MUTED, bg=PANEL,
-    ).pack(pady=30)
+    assets_path = (
+        Path(__file__).resolve().parent.parent
+        / "assets"
+        / "character"
+    )
+
+    animations = {
+        name: load_animation(
+            window, assets_path / f"luna_{name}.gif"
+        )
+        for name in ("idle", "working")
+    }
+
+    current_state = (
+        "idle" if args.state == "auto" else args.state
+    )
+    animation_state = current_state
+    animation_frame = 0
+
+    character_image = tk.Label(
+        character_panel,
+        image=animations[current_state][0][0],
+        bg=PANEL,
+        borderwidth=0,
+        highlightthickness=0,
+    )
+    character_image.pack(pady=2)
 
     state_label = tk.Label(
-        character_panel, text="State: waiting",
+        character_panel,
+        text="State: waiting",
         font=("Segoe UI", 12),
-        fg=PURPLE, bg=PANEL,
+        fg=PURPLE,
+        bg=PANEL,
     )
     state_label.pack(pady=5)
 
@@ -63,9 +126,11 @@ def main():
 
     def make_label(parent, text, size=18, color=PURPLE):
         return tk.Label(
-            parent, text=text,
+            parent,
+            text=text,
             font=("Segoe UI", size),
-            fg=color, bg=BACKGROUND,
+            fg=color,
+            bg=BACKGROUND,
         )
 
     make_label(stats_page, "PC STATUS", 18, WHITE).pack(
@@ -78,7 +143,9 @@ def main():
     ram_label = make_label(stats_page, "RAM: -- %")
     ram_label.pack(pady=8)
 
-    clock_label = make_label(stats_page, "--:--:--", 16, MUTED)
+    clock_label = make_label(
+        stats_page, "--:--:--", 16, MUTED
+    )
     clock_label.pack(pady=15)
 
     make_label(timer_page, "FOCUS TIMER", 18, WHITE).pack(
@@ -88,10 +155,12 @@ def main():
     timer_label = make_label(timer_page, "25:00", 32)
     timer_label.pack(pady=10)
 
-    timer_status = make_label(timer_page, "Ready", 12, MUTED)
+    timer_status = make_label(
+        timer_page, "Ready", 12, MUTED
+    )
     timer_status.pack(pady=5)
 
-    remaining = 25 * 60
+    remaining = float(FOCUS_SECONDS)
     deadline = None
 
     def toggle_timer():
@@ -100,19 +169,26 @@ def main():
         if deadline is None:
             if remaining <= 0:
                 return
+
             deadline = time.monotonic() + remaining
             start_button.configure(text="Pause")
-            timer_status.configure(text="Focus time", fg=MUTED)
+            timer_status.configure(
+                text="Focus time", fg=MUTED
+            )
         else:
-            remaining = max(0, deadline - time.monotonic())
+            remaining = max(
+                0.0, deadline - time.monotonic()
+            )
             deadline = None
             start_button.configure(text="Start")
-            timer_status.configure(text="Paused", fg=MUTED)
+            timer_status.configure(
+                text="Paused", fg=MUTED
+            )
 
     def reset_timer():
         nonlocal remaining, deadline
 
-        remaining = 25 * 60
+        remaining = float(FOCUS_SECONDS)
         deadline = None
         start_button.configure(text="Start")
         timer_status.configure(text="Ready", fg=MUTED)
@@ -122,41 +198,74 @@ def main():
     controls.pack(pady=10)
 
     start_button = tk.Button(
-        controls, text="Start", command=toggle_timer,
-        width=8, bg=PANEL, fg=WHITE,
+        controls,
+        text="Start",
+        command=toggle_timer,
+        width=8,
+        bg=PANEL,
+        fg=WHITE,
     )
     start_button.pack(side="left", padx=4)
 
     tk.Button(
-        controls, text="Reset", command=reset_timer,
-        width=8, bg=PANEL, fg=WHITE,
+        controls,
+        text="Reset",
+        command=reset_timer,
+        width=8,
+        bg=PANEL,
+        fg=WHITE,
     ).pack(side="left", padx=4)
 
     tk.Button(
-        navigation, text="PC Status",
+        navigation,
+        text="PC Status",
         command=lambda: show_page(stats_page),
-        bg=PANEL, fg=WHITE,
-    ).pack(side="left", expand=True, fill="both", padx=4, pady=4)
+        bg=PANEL,
+        fg=WHITE,
+    ).pack(
+        side="left", expand=True, fill="both",
+        padx=4, pady=4,
+    )
 
     tk.Button(
-        navigation, text="Focus Timer",
+        navigation,
+        text="Focus Timer",
         command=lambda: show_page(timer_page),
-        bg=PANEL, fg=WHITE,
-    ).pack(side="left", expand=True, fill="both", padx=4, pady=4)
+        bg=PANEL,
+        fg=WHITE,
+    ).pack(
+        side="left", expand=True, fill="both",
+        padx=4, pady=4,
+    )
 
     def update_stats():
+        nonlocal current_state
+
         cpu = psutil.cpu_percent(interval=None)
         ram = psutil.virtual_memory().percent
-        state = choose_state({"cpu_percent": cpu})
+
+        if args.state == "auto":
+            current_state = choose_state(
+                {"cpu_percent": cpu}
+            )
+        else:
+            current_state = args.state
 
         cpu_label.configure(text=f"CPU: {cpu:.1f} %")
         ram_label.configure(text=f"RAM: {ram:.1f} %")
         clock_label.configure(
             text=datetime.now().strftime("%H:%M:%S")
         )
+
+        suffix = " (demo)" if args.state != "auto" else ""
+
         state_label.configure(
-            text=f"State: {state}",
-            fg=GOLD if state == "working" else PURPLE,
+            text=f"State: {current_state}{suffix}",
+            fg=(
+                GOLD
+                if current_state == "working"
+                else PURPLE
+            ),
         )
 
         window.after(1000, update_stats)
@@ -165,26 +274,50 @@ def main():
         nonlocal remaining, deadline
 
         if deadline is not None:
-            remaining = max(0, deadline - time.monotonic())
+            remaining = max(
+                0.0, deadline - time.monotonic()
+            )
 
             if remaining <= 0:
                 deadline = None
                 start_button.configure(text="Start")
-                timer_status.configure(text="Session complete!", fg=GOLD)
+                timer_status.configure(
+                    text="Session complete!", fg=GOLD
+                )
 
-        seconds = int(remaining)
-        if remaining > seconds:
-            seconds += 1
-
+        seconds = math.ceil(remaining)
         minutes, seconds = divmod(seconds, 60)
-        timer_label.configure(text=f"{minutes:02d}:{seconds:02d}")
+
+        timer_label.configure(
+            text=f"{minutes:02d}:{seconds:02d}"
+        )
 
         window.after(100, update_timer)
 
+    def animate_character():
+        nonlocal animation_state, animation_frame
+
+        if current_state != animation_state:
+            animation_state = current_state
+            animation_frame = 0
+
+        frames, durations = animations[animation_state]
+
+        character_image.configure(
+            image=frames[animation_frame]
+        )
+        duration = durations[animation_frame]
+        animation_frame = (
+            animation_frame + 1
+        ) % len(frames)
+
+        window.after(duration, animate_character)
+
     show_page(stats_page)
     psutil.cpu_percent(interval=None)
-    window.after(1000, update_stats)
+    update_stats()
     update_timer()
+    animate_character()
     window.mainloop()
 
 
