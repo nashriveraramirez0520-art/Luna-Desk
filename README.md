@@ -119,7 +119,9 @@ The individual STEP files each contain one valid solid. Converted STLs were chec
 
 Check actual thread engagement, insert fit and cable clearance before final assembly. No microSD card is needed for the compiled animation assets.
 
-My **October 26, 2026** quote was **$25.99 for the board + $11.20 shipping = $37.19**. Against the provisional $65 funding target, that leaves $27.81 before printing, hardware, cable, taxes and price changes. These are historical quotes, not purchases or a final total. [`BOM.csv`](BOM.csv) still needs supplier prices and a printing estimate; its placeholder shipping value is not an estimate.
+The [planning BOM](BOM.csv) now includes supplier links, whole purchase packs, the owned USB data cable, the three university-printed parts, and a **$5 provisional material allowance**. See [BOM notes and price sources](docs/bom-notes.md) for quantities, dated quotes, and the unverified insert-price estimate.
+
+The **planning subtotal is $57.76**, including the earlier $11.20 Waveshare shipping quote and the $5 material reserve. Additional hardware shipping and checkout taxes are still unpriced. This leaves **$7.24** against the provisional $65 target; it is not a final delivered total or an approved grant. University printing/material fees remain unconfirmed, and the reserve is not a quotation for a whole filament spool.
 
 ## Validation and next steps
 
